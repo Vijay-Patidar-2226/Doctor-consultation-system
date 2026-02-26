@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoom Consultation - Doctor Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #00e5c8;
+    --teal-dark: #00b8a0;
+    --bg: #0a0f1e;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: rgba(0,229,200,0.15);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --red: #ff4d6d;
+    --green: #22d3a0;
+    --yellow: #fbbf24;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* ── PAGE SYSTEM ── */
+  .page { display:none; min-height:100vh; }
+  .page.active { display:flex; flex-direction:column; }
+
+  /* ══════════════════════════════
+     PAGE 1 — ZOOM CALL
+  ══════════════════════════════ */
+  #zoomPage {
+    background: radial-gradient(ellipse at 20% 50%, #0d2040 0%, var(--bg) 60%);
+  }
+
+  .zoom-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px;
+    background:rgba(17,24,39,0.9);
+    border-bottom:1px solid var(--border);
+    backdrop-filter:blur(10px);
+    position:sticky; top:0; z-index:10;
+  }
+  .zoom-header .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--teal); letter-spacing:0.5px; }
+  .zoom-header .meeting-info { display:flex; align-items:center; gap:10px; }
+  .rec-dot { width:10px; height:10px; border-radius:50%; background:var(--red); animation:pulse-rec 1.4s infinite; }
+  @keyframes pulse-rec { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  .meeting-id { font-size:13px; color:var(--muted); }
+  .timer { font-family:'Syne',sans-serif; font-size:16px; font-weight:600; color:var(--teal); letter-spacing:1px; }
+
+  .zoom-body {
+    flex:1; display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    padding:20px 28px; align-items:stretch;
+  }
+
+  .video-slot {
+    border-radius:16px; overflow:hidden; position:relative;
+    background:var(--card); border:1px solid var(--border);
+    min-height:400px; display:flex; align-items:center; justify-content:center;
+  }
+  .video-slot.doctor-slot {
+    background: #000;
+  }
+  .video-slot.patient-slot {
+    background: linear-gradient(135deg, #0d2040 0%, #112030 100%);
+  }
+
+  /* real video element for doctor */
+  #doctorVideo {
+    width:100%; height:100%; object-fit:cover;
+    position:absolute; inset:0; border-radius:16px;
+    display:none;
+    transform: scaleX(-1); /* mirror effect */
+  }
+
+  /* camera permission overlay */
+  #camPermission {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; background:rgba(0,0,0,0.85); border-radius:16px; z-index:2;
+  }
+  .perm-icon {
+    width:70px; height:70px; border-radius:50%;
+    background:rgba(0,229,200,0.1); border:2px solid rgba(0,229,200,0.4);
+    display:flex; align-items:center; justify-content:center;
+    animation: pulse-cam 2s infinite;
+  }
+  @keyframes pulse-cam { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,200,0.3)} 50%{box-shadow:0 0 0 16px rgba(0,229,200,0)} }
+  .perm-text { color:var(--text); font-size:14px; font-weight:500; text-align:center; }
+  .perm-sub { color:var(--muted); font-size:12px; text-align:center; }
+  .perm-btn {
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    border:none; border-radius:10px; padding:10px 22px;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:#000;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .perm-btn:hover { transform:scale(1.05); }
+
+  /* cam-overlay used for patient side now */
+  .cam-overlay {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px;
+  }
+  .doctor-avatar {
+    width:110px; height:110px; border-radius:50%;
+    background: linear-gradient(135deg, var(--teal-dark), #0070c0);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-size:38px; font-weight:800; color:#fff;
+    border:3px solid var(--teal);
+    box-shadow: 0 0 30px rgba(0,229,200,0.3);
+  }
+  .cam-name {
+    font-family:'Syne',sans-serif; font-size:14px; font-weight:600;
+    background:rgba(0,0,0,0.5); padding:4px 14px; border-radius:20px;
+    color:#fff;
+  }
+  .cam-label {
+    position:absolute; bottom:14px; left:16px;
+    background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:8px;
+    font-size:12px; color:var(--teal); font-weight:600; letter-spacing:0.5px;
+  }
+  .cam-status {
+    position:absolute; top:14px; right:14px;
+    background:rgba(0,0,0,0.6); padding:4px 10px; border-radius:8px;
+    font-size:11px; color:var(--green); display:flex; align-items:center; gap:5px;
+  }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--green); }
+
+  /* patient cam – show "you" indicator */
+  .you-badge {
+    position:absolute; top:14px; left:14px;
+    background:var(--teal); color:#000; font-size:11px; font-weight:700;
+    padding:3px 10px; border-radius:20px; letter-spacing:0.5px;
+  }
+
+  /* video transition for on/off */
+  #doctorVideo { transition: opacity 0.3s; }
+
+  /* ── CONTROLS BAR ── */
+  .controls-bar {
+    display:flex; align-items:center; justify-content:center; gap:16px;
+    padding:18px; background:rgba(17,24,39,0.95);
+    border-top:1px solid var(--border);
+  }
+  .ctrl-btn {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:14px; padding:12px 20px; cursor:pointer;
+    transition:all 0.2s; color:var(--text); font-size:11px; font-weight:500;
+    min-width:80px; user-select:none;
+  }
+  .ctrl-btn svg { width:22px; height:22px; }
+  .ctrl-btn:hover { background:var(--card); border-color:var(--teal); color:var(--teal); transform:translateY(-2px); }
+  .ctrl-btn.active { background:rgba(0,229,200,0.1); border-color:var(--teal); color:var(--teal); }
+  .ctrl-btn.off { background:rgba(255,77,109,0.12); border-color:rgba(255,77,109,0.4); color:var(--red); }
+  .ctrl-btn.end-btn {
+    background:var(--red); border-color:var(--red); color:#fff;
+    min-width:120px; font-weight:700; font-size:13px;
+  }
+  .ctrl-btn.end-btn:hover { background:#e0003c; transform:translateY(-2px) scale(1.03); }
+
+  /* ══════════════════════════════
+     PAGE 2 — PRESCRIPTION
+  ══════════════════════════════ */
+  #rxPage {
+    background: radial-gradient(ellipse at 80% 0%, #0d2040 0%, var(--bg) 55%);
+    align-items:center; justify-content:center; padding:30px 20px;
+  }
+
+  .rx-card {
+    width:100%; max-width:680px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: slideUp 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+
+  .rx-header {
+    padding:24px 32px;
+    background: linear-gradient(135deg, rgba(0,229,200,0.12) 0%, rgba(0,112,192,0.1) 100%);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:16px;
+  }
+  .rx-icon {
+    width:52px; height:52px; border-radius:14px;
+    background: linear-gradient(135deg, var(--teal), #0070c0);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .rx-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+  .rx-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+  .patient-strip {
+    margin:24px 32px 0;
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:12px; padding:14px 18px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .patient-strip .p-name { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; }
+  .patient-strip .p-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+  .badge { background:rgba(0,229,200,0.15); color:var(--teal); font-size:11px; font-weight:700;
+    padding:4px 12px; border-radius:20px; border:1px solid rgba(0,229,200,0.3); }
+
+  .rx-form { padding:24px 32px 32px; display:flex; flex-direction:column; gap:18px; }
+
+  .form-group { display:flex; flex-direction:column; gap:7px; }
+  .form-label { font-size:12px; font-weight:600; color:var(--teal); text-transform:uppercase; letter-spacing:0.8px; }
+  .form-input, .form-textarea, .form-select {
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:10px; padding:11px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+    transition:border-color 0.2s, box-shadow 0.2s; resize:none; outline:none;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color:var(--teal); box-shadow:0 0 0 3px rgba(0,229,200,0.1);
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color:var(--muted); }
+  .form-textarea { min-height:90px; }
+  .form-select option { background:#1a2235; }
+
+  /* medicine rows */
+  .med-list { display:flex; flex-direction:column; gap:10px; }
+  .med-row {
+    display:grid; grid-template-columns:1fr 100px 120px 36px; gap:8px; align-items:center;
+  }
+  .med-row input, .med-row select {
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:8px; padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:13px; outline:none; transition:border-color 0.2s;
+  }
+  .med-row input:focus, .med-row select:focus { border-color:var(--teal); }
+  .med-row select option { background:#1a2235; }
+  .del-btn {
+    background:rgba(255,77,109,0.1); border:1px solid rgba(255,77,109,0.3);
+    color:var(--red); border-radius:8px; width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;
+  }
+  .del-btn:hover { background:rgba(255,77,109,0.2); }
+  .add-med-btn {
+    background:transparent; border:1px dashed rgba(0,229,200,0.35);
+    color:var(--teal); border-radius:10px; padding:9px; font-size:13px; font-weight:600;
+    cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .add-med-btn:hover { background:rgba(0,229,200,0.07); border-color:var(--teal); }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+  .submit-row { display:flex; gap:12px; margin-top:4px; }
+  .btn-submit {
+    flex:1; background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    border:none; border-radius:12px; padding:14px; font-family:'Syne',sans-serif;
+    font-size:15px; font-weight:700; color:#000; cursor:pointer;
+    transition:all 0.2s; letter-spacing:0.3px;
+  }
+  .btn-submit:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,229,200,0.25); }
+  .btn-clear {
+    background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px 20px;
+    font-family:'Syne',sans-serif; font-size:14px; font-weight:600; color:var(--muted);
+    cursor:pointer; transition:all 0.2s;
+  }
+  .btn-clear:hover { color:var(--text); border-color:var(--muted); }
+
+  /* ══════════════════════════════
+     PAGE 3 — SUCCESS
+  ══════════════════════════════ */
+  #successPage {
+    align-items:center; justify-content:center; text-align:center; padding:40px 20px;
+  }
+  .success-circle {
+    width:100px; height:100px; border-radius:50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    display:flex; align-items:center; justify-content:center; margin:0 auto 24px;
+    animation: popIn 0.5s cubic-bezier(0.22,1,0.36,1);
+    box-shadow:0 0 50px rgba(0,229,200,0.3);
+  }
+  @keyframes popIn { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+  .success-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:10px; }
+  .success-text { color:var(--muted); font-size:15px; margin-bottom:30px; max-width:360px; margin-left:auto; margin-right:auto; }
+  .redirect-bar {
+    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 24px;
+    display:inline-flex; align-items:center; gap:12px; font-size:14px; color:var(--muted);
+  }
+  .redirect-count { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--teal); }
+
+  /* scroll */
+  ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ PAGE 1: ZOOM ════════════════ -->
+<div class="page active" id="zoomPage">
+  <div class="zoom-header">
+    <div class="logo">Doctor Consultation</div>
+    <div class="meeting-info">
+      <div class="rec-dot"></div>
+      <span class="meeting-id">Meeting: #MC-2026-0226</span>
+    </div>
+    <div class="timer" id="callTimer">00:00</div>
+  </div>
+
+  <div class="zoom-body">
+    <!-- Doctor Video — REAL WEBCAM -->
+    <div class="video-slot doctor-slot">
+      <video id="doctorVideo" autoplay playsinline muted></video>
+
+      <div id="camPermission">
+        <div class="perm-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2">
+            <path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+          </svg>
+        </div>
+        <div class="perm-text">Camera access required</div>
+        <div class="perm-sub">Allow camera permission to start video</div>
+        <button class="perm-btn" onclick="startDoctorCamera()">Allow Camera</button>
+      </div>
+
+      <div class="cam-label">🩺 Doctor &nbsp;·&nbsp; You</div>
+      <div class="cam-status" id="docStatus" style="display:none"><span class="status-dot"></span> Live</div>
+    </div>
+
+    <!-- Patient side — avatar (patient joins from their device) -->
+    <div class="video-slot patient-slot">
+      <div class="cam-overlay">
+        <div class="doctor-avatar">P</div>
+        <div class="cam-name">Patient</div>
+      </div>
+      <div class="cam-label">👤 Patient &nbsp;·&nbsp; PID-10021</div>
+      <div class="cam-status"><span class="status-dot"></span> Connected</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <button class="ctrl-btn active" id="micBtn" onclick="toggleMic()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      Mic On
+    </button>
+    <button class="ctrl-btn active" id="videoBtn" onclick="toggleVideo()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      Video On
+    </button>
+    <button class="ctrl-btn end-btn" onclick="endMeeting()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.42 19.42 0 013.43 9.19 19.79 19.79 0 01.36 0.56 2 2 0 012.35 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.18 7.91a16 16 0 006.5 5.4z"/>
+      </svg>
+      End Meeting
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE 2: PRESCRIPTION ════════════════ -->
+<div class="page" id="rxPage">
+  <div class="rx-card">
+    <div class="rx-header">
+      <div class="rx-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M12 12h.01M8 12h.01M16 12h.01M12 16h.01M8 16h.01M16 16h.01"/>
+        </svg>
+      </div>
+      <div>
+        <div class="rx-title">Add Notes & Prescription</div>
+        <div class="rx-subtitle">Post-consultation — Rahul Kumar · PID-10021</div>
+      </div>
+    </div>
+
+    <div class="patient-strip">
+      <div>
+        <div class="p-name">Rahul Kumar</div>
+        <div class="p-meta">Upper Respiratory Infection &nbsp;·&nbsp; Last Visit: Feb 19, 2026</div>
+      </div>
+      <div class="badge">Follow-up</div>
+    </div>
+
+    <form class="rx-form" onsubmit="submitRx(event)">
+      <!-- Diagnosis -->
+      <div class="form-group">
+        <label class="form-label">Diagnosis / Observation</label>
+        <textarea class="form-textarea" placeholder="Describe clinical findings, diagnosis, patient condition..."></textarea>
+      </div>
+
+      <!-- Medicines -->
+      <div class="form-group">
+        <label class="form-label">Medicines</label>
+        <div class="med-list" id="medList">
+          <div class="med-row">
+            <input type="text" placeholder="Medicine name" />
+            <input type="text" placeholder="Dosage (e.g. 500mg)" />
+            <select>
+              <option value="">Frequency</option>
+              <option>Once daily</option>
+              <option>Twice daily</option>
+              <option>Thrice daily</option>
+              <option>SOS (as needed)</option>
+            </select>
+            <div class="del-btn" onclick="removeMed(this)" title="Remove">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="add-med-btn" onclick="addMed()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Medicine
+        </button>
+      </div>
+
+      <div class="two-col">
+        <!-- Follow-up -->
+        <div class="form-group">
+          <label class="form-label">Next Follow-up</label>
+          <input class="form-input" type="date" />
+        </div>
+        <!-- Consultation mode -->
+        <div class="form-group">
+          <label class="form-label">Next Visit Mode</label>
+          <select class="form-select">
+            <option>Online</option>
+            <option>Offline / In-person</option>
+            <option>Not required</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Additional notes -->
+      <div class="form-group">
+        <label class="form-label">Additional Instructions</label>
+        <textarea class="form-textarea" placeholder="Lifestyle advice, dietary restrictions, lab tests, special instructions..."></textarea>
+      </div>
+
+      <div class="submit-row">
+        <button type="button" class="btn-clear">Clear</button>
+        <button type="submit" class="btn-submit">Submit & Save Prescription →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE 3: SUCCESS ════════════════ -->
+<div class="page" id="successPage">
+  <div class="success-circle">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.8">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <div class="success-title">Prescription Saved! ✓</div>
+  <div class="success-text">Patient prescription and consultation notes have been successfully saved and shared.</div>
+  <div class="redirect-bar">
+    <span>Redirecting to Dashboard in</span>
+    <span class="redirect-count" id="countNum">5</span>
+    <span>seconds...</span>
+  </div>
+</div>
+
+<script>
+// ── Timer ──
+let secs = 0, timerInt = null;
+function startTimer() {
+  timerInt = setInterval(() => {
+    secs++;
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    document.getElementById('callTimer').textContent = m+':'+s;
+  }, 1000);
+}
+startTimer();
+
+// ── Real Camera ──
+let localStream = null;
+
+async function startDoctorCamera() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const video = document.getElementById('doctorVideo');
+    video.srcObject = localStream;
+    video.style.display = 'block';
+    document.getElementById('camPermission').style.display = 'none';
+    document.getElementById('docStatus').style.display = 'flex';
+  } catch(err) {
+    const perm = document.getElementById('camPermission');
+    perm.querySelector('.perm-text').textContent = 'Camera access denied';
+    perm.querySelector('.perm-sub').textContent = 'Please allow camera in browser settings and reload';
+    perm.querySelector('.perm-btn').textContent = 'Retry';
+    console.error('Camera error:', err);
+  }
+}
+
+// Auto-start camera when page loads
+window.addEventListener('load', () => {
+  startDoctorCamera();
+});
+
+// ── Controls ──
+function toggleMic() {
+  const btn = document.getElementById('micBtn');
+  if(localStream) {
+    const audioTracks = localStream.getAudioTracks();
+    if(btn.classList.contains('active')) {
+      audioTracks.forEach(t => t.enabled = false);
+      btn.classList.remove('active'); btn.classList.add('off');
+      btn.querySelector('svg').innerHTML = `<line x1="1" y1="1" x2="23" y2="23" stroke-width="2"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4M8 23h8"/>`;
+      btn.lastChild.textContent = ' Mic Off';
+    } else {
+      audioTracks.forEach(t => t.enabled = true);
+      btn.classList.add('active'); btn.classList.remove('off');
+      btn.querySelector('svg').innerHTML = `<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>`;
+      btn.lastChild.textContent = ' Mic On';
+    }
+  }
+}
+
+function toggleVideo() {
+  const btn = document.getElementById('videoBtn');
+  const video = document.getElementById('doctorVideo');
+  if(localStream) {
+    const videoTracks = localStream.getVideoTracks();
+    if(btn.classList.contains('active')) {
+      videoTracks.forEach(t => t.enabled = false);
+      video.style.opacity = '0.15';
+      btn.classList.remove('active'); btn.classList.add('off');
+      btn.lastChild.textContent = ' Video Off';
+    } else {
+      videoTracks.forEach(t => t.enabled = true);
+      video.style.opacity = '1';
+      btn.classList.add('active'); btn.classList.remove('off');
+      btn.lastChild.textContent = ' Video On';
+    }
+  }
+}
+
+function toggleChat() { alert('Chat panel — backend se connect karein!'); }
+function toggleShare() { alert('Screen share WebRTC se hogi — backend required.'); }
+
+// ── End Meeting → Prescription ──
+function endMeeting() {
+  clearInterval(timerInt);
+  // Stop all camera/mic tracks
+  if(localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+  showPage('rxPage');
+}
+
+// ── Medicines ──
+function addMed() {
+  const list = document.getElementById('medList');
+  const row = document.createElement('div');
+  row.className = 'med-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Medicine name" />
+    <input type="text" placeholder="Dosage" />
+    <select>
+      <option value="">Frequency</option>
+      <option>Once daily</option><option>Twice daily</option>
+      <option>Thrice daily</option><option>SOS (as needed)</option>
+    </select>
+    <div class="del-btn" onclick="removeMed(this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>`;
+  list.appendChild(row);
+}
+function removeMed(el) {
+  const row = el.parentElement;
+  if(document.querySelectorAll('.med-row').length > 1) row.remove();
+}
+
+// ── Submit → Success → Redirect ──
+function submitRx(e) {
+  e.preventDefault();
+  showPage('successPage');
+  let n = 5;
+  const counter = document.getElementById('countNum');
+  const cd = setInterval(() => {
+    n--;
+    counter.textContent = n;
+    if(n <= 0) {
+      clearInterval(cd);
+      // In real app: window.location.href = '/consultation.jsp';
+      // For demo: go back to consultation page
+      showPage('zoomPage');
+      secs = 0;
+      startTimer();/* 
+      alert('✅ Prescription saved! Redirected to Dashboard (simulated).'); */
+      window.location.href="d-dashboard.jsp";
+    }
+  }, 1000);
+}
+
+// ── Page switching ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

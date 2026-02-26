@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Profile Update - MediCare Booking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy: #0d1b2a;
+            --blue: #1a3a5c;
+            --teal: #1b7a7a;
+            --teal-light: #24a8a8;
+            --gold: #c9a84c;
+            --gold-light: #e8c97a;
+            --cream: #f7f3ec;
+            --white: #ffffff;
+            --grey: #8a9ab0;
+            --light-grey: #e8edf5;
+            --text: #1a2535;
+            --success: #1a7a5c;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        header {
+            background: var(--navy);
+            padding: 0 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 68px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,.35);
+        }
+
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.4rem; letter-spacing: .5px; }
+        .logo span { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+
+        .doctor-chip {
+            background: rgba(201,168,76,.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: .3rem .9rem;
+            border-radius: 20px;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,.2);
+            color: var(--white);
+            padding: .4rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .85rem;
+            transition: all .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .back-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
+
+        /* ── Page ── */
+        .page-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 5rem;
+        }
+
+        .page-title { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--navy); margin-bottom: .4rem; }
+        .page-sub { color: var(--grey); font-size: .95rem; margin-bottom: 2rem; }
+
+        /* ── Single card ── */
+        .form-card {
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 6px 32px rgba(13,27,42,.09);
+            overflow: hidden;
+        }
+
+        /* Photo strip at top of card */
+        .photo-strip {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+            padding: 2rem 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .avatar-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+        .avatar {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), var(--teal-light));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.4rem;
+            border: 3px solid rgba(255,255,255,.25);
+        }
+        .avatar-upload-btn {
+            position: absolute; bottom: 2px; right: 2px;
+            width: 28px; height: 28px;
+            background: var(--gold); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 2px solid var(--white);
+            font-size: .8rem; transition: transform .2s;
+        }
+        .avatar-upload-btn:hover { transform: scale(1.1); }
+        #avatarUpload { display: none; }
+        .photo-info h3 { color: var(--white); font-size: 1.1rem; font-weight: 600; margin-bottom: .2rem; }
+        .photo-info p { color: rgba(255,255,255,.5); font-size: .82rem; }
+
+        /* ── Form body ── */
+        .form-body { padding: 2.5rem; }
+
+        /* Section dividers — inline heading with rule */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2.4rem 0 1.6rem;
+        }
+        .section-divider:first-child { margin-top: 0; }
+
+        .divider-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--navy), var(--blue));
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .95rem; flex-shrink: 0;
+        }
+
+        .section-divider h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            color: var(--navy);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--light-grey);
+        }
+
+        /* ── Grid & fields ── */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.3rem; }
+        .full { grid-column: 1 / -1; }
+        .field { display: flex; flex-direction: column; gap: .4rem; }
+
+        label {
+            font-size: .77rem; font-weight: 600;
+            color: var(--blue);
+            text-transform: uppercase; letter-spacing: .6px;
+        }
+
+        input[type="text"], input[type="email"], input[type="tel"],
+        input[type="number"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: .72rem 1rem;
+            border: 1.5px solid var(--light-grey);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .93rem;
+            color: var(--text);
+            background: #fafbfd;
+            transition: border-color .2s, box-shadow .2s;
+            outline: none;
+            appearance: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--teal-light);
+            box-shadow: 0 0 0 3px rgba(36,168,168,.12);
+            background: var(--white);
+        }
+        textarea { resize: vertical; min-height: 90px; }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9ab0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+            cursor: pointer;
+        }
+
+        /* Status strip */
+        .status-row {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .8rem 1.1rem;
+            background: rgba(26,122,92,.06);
+            border-radius: 10px;
+            border: 1px solid rgba(26,122,92,.2);
+            margin-top: .9rem;
+        }
+        .status-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 0 3px rgba(26,122,92,.2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 0 3px rgba(26,122,92,.2); }
+            50% { box-shadow: 0 0 0 6px rgba(26,122,92,.08); }
+        }
+        .status-text { font-size: .86rem; color: var(--success); font-weight: 500; }
+
+        /* ── Days ── */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: .6rem;
+            margin-bottom: 1.8rem;
+        }
+        .day-toggle { display: none; }
+        .day-label {
+            display: flex; flex-direction: column; align-items: center;
+            padding: .65rem .3rem;
+            border-radius: 12px;
+            border: 2px solid var(--light-grey);
+            cursor: pointer; background: #fafbfd;
+            transition: all .2s;
+            font-size: .8rem; font-weight: 600; color: var(--grey);
+            user-select: none;
+        }
+        .day-toggle:checked + .day-label {
+            background: linear-gradient(135deg, var(--teal), var(--teal-light));
+            border-color: var(--teal);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(27,122,122,.28);
+        }
+
+        /* ── Time Slots ── */
+        .slots-group { margin-bottom: 1.4rem; }
+        .slots-sub-title {
+            font-size: .78rem; font-weight: 600; color: var(--grey);
+            text-transform: uppercase; letter-spacing: .6px;
+            margin-bottom: .75rem;
+        }
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+            gap: .55rem;
+        }
+        .slot-toggle { display: none; }
+        .slot-label {
+            display: flex; align-items: center; justify-content: center;
+            padding: .52rem .4rem;
+            border-radius: 9px;
+            border: 1.5px solid var(--light-grey);
+            cursor: pointer; background: #fafbfd;
+            font-size: .82rem; font-weight: 500; color: var(--grey);
+            transition: all .2s; user-select: none; text-align: center;
+        }
+        .slot-toggle:checked + .slot-label {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            border-color: var(--gold);
+            color: var(--navy); font-weight: 600;
+            box-shadow: 0 3px 10px rgba(201,168,76,.28);
+        }
+        .slot-toggle:not(:checked) + .slot-label:hover {
+            border-color: var(--teal-light); color: var(--teal);
+            background: rgba(36,168,168,.05);
+        }
+
+        /* ── Password ── */
+        .pass-wrap { position: relative; }
+        .pass-wrap input { padding-right: 3rem; }
+        .eye-btn {
+            position: absolute; right: .9rem; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            font-size: 1rem; color: var(--grey); padding: 0;
+        }
+
+        /* ── Save bar ── */
+        .save-bar {
+            position: sticky; bottom: 0;
+            background: var(--white);
+            border-top: 1px solid var(--light-grey);
+            padding: 1rem 2rem;
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 1rem;
+            box-shadow: 0 -4px 20px rgba(0,0,0,.07);
+            z-index: 50;
+        }
+        .btn {
+            padding: .7rem 2rem; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: .95rem;
+            font-weight: 600; cursor: pointer; border: none; transition: all .2s;
+        }
+        .btn-outline { background: transparent; border: 1.5px solid var(--light-grey); color: var(--grey); }
+        .btn-outline:hover { border-color: var(--grey); color: var(--text); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--teal), var(--teal-light));
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(27,122,122,.35);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(27,122,122,.45); }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* ── Responsive ── */
+        @media(max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .full { grid-column: 1; }
+            .days-grid { grid-template-columns: repeat(4, 1fr); }
+            .photo-strip { flex-direction: column; text-align: center; padding: 1.5rem; }
+            .form-body { padding: 1.5rem; }
+            header { padding: 0 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Medi<span>Care</span></div>
+    <div class="header-right">
+        <span class="doctor-chip">👨‍⚕️ Doctor Portal</span>
+        <button class="back-btn" onclick="window.history.back()">← Back</button>
+    </div>
+</header>
+
+<div class="page-wrap">
+    <h1 class="page-title">Update Your Profile</h1>
+    <p class="page-sub">Keep your information and availability up to date for your patients.</p>
+
+    <div class="form-card">
+
+        <!-- Photo strip -->
+        <div class="photo-strip">
+            <div class="avatar-wrap">
+                <div class="avatar" id="avatarPreview">👨‍⚕️</div>
+                <label for="avatarUpload" class="avatar-upload-btn" title="Change photo">✏️</label>
+                <input type="file" id="avatarUpload" accept="image/*">
+            </div>
+            <div class="photo-info">
+                <h3>Profile Photo</h3>
+                <p>Click the pencil icon to upload a new photo.<br>JPG, PNG or GIF — max 5 MB.</p>
+            </div>
+        </div>
+
+        <form id="updateForm" novalidate>
+        <div class="form-body">
+
+            <!-- Personal Information -->
+            <div class="section-divider">
+                <div class="divider-icon">👤</div>
+                <h2>Personal Information</h2>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="e.g. Rajesh" required>
+                </div>
+                <div class="field">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="e.g. Sharma" required>
+                </div>
+                <div class="field">
+                    <label for="email">Professional Email</label>
+                    <input type="email" id="email" name="email" placeholder="doctor@hospital.com" required>
+                </div>
+                <div class="field">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required>
+                </div>
+                <div class="field full">
+                    <label for="bio">Short Bio</label>
+                    <textarea id="bio" name="bio" placeholder="Write a short introduction about yourself and your approach to patient care…"></textarea>
+                </div>
+            </div>
+
+            <!-- Professional Details -->
+            <div class="section-divider">
+                <div class="divider-icon">🏥</div>
+                <h2>Professional Details</h2>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="medicalLicense">Medical License No.</label>
+                    <input type="text" id="medicalLicense" name="medicalLicense" placeholder="e.g. MCI/2018/12345" required>
+                </div>
+                <div class="field">
+                    <label for="experience">Years of Experience</label>
+                    <input type="number" id="experience" name="experience" placeholder="e.g. 8" min="0" max="60" required>
+                </div>
+                <div class="field">
+                    <label for="specialization">Medical Specialization</label>
+                    <select id="specialization" name="specialization" required>
+                        <option value="">Select Specialization</option>
+                        <option value="general">General Medicine</option>
+                        <option value="cardiology">Cardiology</option>
+                        <option value="dermatology">Dermatology</option>
+                        <option value="neurology">Neurology</option>
+                        <option value="orthopedics">Orthopedics</option>
+                        <option value="pediatrics">Pediatrics</option>
+                        <option value="psychiatry">Psychiatry</option>
+                        <option value="gynecology">Gynecology</option>
+                        <option value="ent">ENT</option>
+                        <option value="ophthalmology">Ophthalmology</option>
+                        <option value="dentistry">Dentistry</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="qualification">Highest Qualification</label>
+                    <input type="text" id="qualification" name="qualification" placeholder="e.g. MBBS, MD (Cardiology)">
+                </div>
+                <div class="field full">
+                    <label for="hospital">Hospital / Clinic Affiliation</label>
+                    <input type="text" id="hospital" name="hospital" placeholder="e.g. Apollo Hospitals, New Delhi" required>
+                </div>
+                <div class="field full">
+                    <label for="clinicAddress">Clinic / Chamber Address</label>
+                    <textarea id="clinicAddress" name="clinicAddress" placeholder="Full address with city and pincode…" style="min-height:70px;"></textarea>
+                </div>
+            </div>
+
+            <!-- Consultation Settings -->
+            <div class="section-divider">
+                <div class="divider-icon">💊</div>
+                <h2>Consultation Settings</h2>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="consultFee">Consultation Fee (₹)</label>
+                    <input type="number" id="consultFee" name="consultFee" placeholder="e.g. 500" min="0">
+                </div>
+                <div class="field">
+                    <label for="consultMode">Consultation Mode</label>
+                    <select id="consultMode" name="consultMode">
+                        <option value="in-person">In-Person Only</option>
+                        <option value="online">Online / Video Only</option>
+                        <option value="both" selected>Both In-Person &amp; Online</option>
+                    </select>
+                </div>
+            </div>
+            <div class="status-row">
+                <div class="status-dot"></div>
+                <span class="status-text">Profile is active and visible to patients</span>
+            </div>
+
+            <!-- Availability & Time Slots -->
+            <div class="section-divider">
+                <div class="divider-icon">📅</div>
+                <h2>Availability &amp; Time Slots</h2>
+            </div>
+            <p style="font-size:.83rem;color:var(--grey);margin-bottom:1.2rem;">Select the days you are available, then pick your time slots below.</p>
+
+            <div class="days-grid">
+                <input type="checkbox" class="day-toggle" id="day-mon" name="days" value="monday">
+                <label for="day-mon" class="day-label">Mon</label>
+                <input type="checkbox" class="day-toggle" id="day-tue" name="days" value="tuesday">
+                <label for="day-tue" class="day-label">Tue</label>
+                <input type="checkbox" class="day-toggle" id="day-wed" name="days" value="wednesday">
+                <label for="day-wed" class="day-label">Wed</label>
+                <input type="checkbox" class="day-toggle" id="day-thu" name="days" value="thursday">
+                <label for="day-thu" class="day-label">Thu</label>
+                <input type="checkbox" class="day-toggle" id="day-fri" name="days" value="friday">
+                <label for="day-fri" class="day-label">Fri</label>
+                <input type="checkbox" class="day-toggle" id="day-sat" name="days" value="saturday">
+                <label for="day-sat" class="day-label">Sat</label>
+                <input type="checkbox" class="day-toggle" id="day-sun" name="days" value="sunday">
+                <label for="day-sun" class="day-label">Sun</label>
+            </div>
+
+            <div class="slots-group">
+                <div class="slots-sub-title">🌅 Morning</div>
+                <div class="slots-grid">
+                    <input type="checkbox" class="slot-toggle" id="s-0600" name="slots" value="06:00"><label for="s-0600" class="slot-label">6:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0630" name="slots" value="06:30"><label for="s-0630" class="slot-label">6:30 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0700" name="slots" value="07:00"><label for="s-0700" class="slot-label">7:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0730" name="slots" value="07:30"><label for="s-0730" class="slot-label">7:30 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0800" name="slots" value="08:00"><label for="s-0800" class="slot-label">8:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0830" name="slots" value="08:30"><label for="s-0830" class="slot-label">8:30 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0900" name="slots" value="09:00"><label for="s-0900" class="slot-label">9:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-0930" name="slots" value="09:30"><label for="s-0930" class="slot-label">9:30 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1000" name="slots" value="10:00"><label for="s-1000" class="slot-label">10:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1030" name="slots" value="10:30"><label for="s-1030" class="slot-label">10:30 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1100" name="slots" value="11:00"><label for="s-1100" class="slot-label">11:00 AM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1130" name="slots" value="11:30"><label for="s-1130" class="slot-label">11:30 AM</label>
+                </div>
+            </div>
+
+            <div class="slots-group">
+                <div class="slots-sub-title">☀️ Afternoon</div>
+                <div class="slots-grid">
+                    <input type="checkbox" class="slot-toggle" id="s-1200" name="slots" value="12:00"><label for="s-1200" class="slot-label">12:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1230" name="slots" value="12:30"><label for="s-1230" class="slot-label">12:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1300" name="slots" value="13:00"><label for="s-1300" class="slot-label">1:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1330" name="slots" value="13:30"><label for="s-1330" class="slot-label">1:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1400" name="slots" value="14:00"><label for="s-1400" class="slot-label">2:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1430" name="slots" value="14:30"><label for="s-1430" class="slot-label">2:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1500" name="slots" value="15:00"><label for="s-1500" class="slot-label">3:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1530" name="slots" value="15:30"><label for="s-1530" class="slot-label">3:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1600" name="slots" value="16:00"><label for="s-1600" class="slot-label">4:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1630" name="slots" value="16:30"><label for="s-1630" class="slot-label">4:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1700" name="slots" value="17:00"><label for="s-1700" class="slot-label">5:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1730" name="slots" value="17:30"><label for="s-1730" class="slot-label">5:30 PM</label>
+                </div>
+            </div>
+
+            <div class="slots-group">
+                <div class="slots-sub-title">🌆 Evening</div>
+                <div class="slots-grid">
+                    <input type="checkbox" class="slot-toggle" id="s-1800" name="slots" value="18:00"><label for="s-1800" class="slot-label">6:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1830" name="slots" value="18:30"><label for="s-1830" class="slot-label">6:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1900" name="slots" value="19:00"><label for="s-1900" class="slot-label">7:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-1930" name="slots" value="19:30"><label for="s-1930" class="slot-label">7:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-2000" name="slots" value="20:00"><label for="s-2000" class="slot-label">8:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-2030" name="slots" value="20:30"><label for="s-2030" class="slot-label">8:30 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-2100" name="slots" value="21:00"><label for="s-2100" class="slot-label">9:00 PM</label>
+                    <input type="checkbox" class="slot-toggle" id="s-2130" name="slots" value="21:30"><label for="s-2130" class="slot-label">9:30 PM</label>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="section-divider">
+                <div class="divider-icon">🔒</div>
+                <h2>Change Password</h2>
+            </div>
+            <div class="form-grid">
+                <div class="field full">
+                    <label for="currentPassword">Current Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter current password">
+                        <button type="button" class="eye-btn" onclick="togglePass('currentPassword', this)">👁️</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="newPassword">New Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Min. 8 characters">
+                        <button type="button" class="eye-btn" onclick="togglePass('newPassword', this)">👁️</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Repeat new password">
+                        <button type="button" class="eye-btn" onclick="togglePass('confirmPassword', this)">👁️</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        </form>
+    </div>
+</div>
+
+<div class="save-bar">
+    <button type="button" class="btn btn-outline" onclick="window.history.back()">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="handleSave()">Save Changes</button>
+</div>
+
+<script>
+    document.getElementById('avatarUpload').addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const preview = document.getElementById('avatarPreview');
+            preview.style.backgroundImage = `url(${e.target.result})`;
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+            preview.textContent = '';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function togglePass(fieldId, btn) {
+        const field = document.getElementById(fieldId);
+        const isPass = field.type === 'password';
+        field.type = isPass ? 'text' : 'password';
+        btn.textContent = isPass ? '🙈' : '👁️';
+    }
+
+    function handleSave() {
+        const np = document.getElementById('newPassword').value;
+        const cp = document.getElementById('confirmPassword').value;
+        if (np && np !== cp) {
+            alert('New passwords do not match. Please check and try again.');
+            return;
+        }
+        const days = [...document.querySelectorAll('input[name="days"]:checked')].map(c => c.value);
+        const slots = [...document.querySelectorAll('input[name="slots"]:checked')].map(c => c.value);
+        alert(`Profile updated!\nWorking days: ${days.join(', ') || 'None'}\nTime slots: ${slots.join(', ') || 'None'}`);
+    }
+</script>
+</body>
+</html>

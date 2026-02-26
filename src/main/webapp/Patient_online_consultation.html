@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Video Consultation - Doctor Consul</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #00e5c8;
+    --teal-dark: #00b8a0;
+    --bg: #0a0f1e;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: rgba(0,229,200,0.15);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --red: #ff4d6d;
+    --green: #22d3a0;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── PAGE SYSTEM ── */
+  .page { display:none; min-height:100vh; }
+  .page.active { display:flex; flex-direction:column; }
+
+  /* ══════════════════════════
+     ZOOM PAGE
+  ══════════════════════════ */
+  #zoomPage {
+    background: radial-gradient(ellipse at 80% 50%, #0d2040 0%, var(--bg) 60%);
+  }
+
+  /* Header */
+  .zoom-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: rgba(17,24,39,0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--teal);
+    letter-spacing: 0.5px;
+  }
+  .meeting-info { display:flex; align-items:center; gap:10px; }
+  .rec-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--red);
+    animation: pulseRec 1.4s infinite;
+  }
+  @keyframes pulseRec {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.5; transform:scale(1.3); }
+  }
+  .meeting-id { font-size: 13px; color: var(--muted); }
+  .call-timer {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 1px;
+  }
+
+  /* Video grid */
+  .zoom-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 20px 28px;
+    align-items: stretch;
+  }
+
+  .video-slot {
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Patient slot (LEFT) — real webcam ── */
+  .patient-slot { background: #000; }
+
+  #patientVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    display: none;
+    transform: scaleX(-1); /* mirror */
+    transition: opacity 0.3s;
+  }
+
+  /* camera permission overlay */
+  #camPermission {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(0,0,0,0.88);
+    border-radius: 16px;
+    z-index: 2;
+  }
+  .perm-icon {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: rgba(0,229,200,0.1);
+    border: 2px solid rgba(0,229,200,0.4);
+    display: flex; align-items: center; justify-content: center;
+    animation: pulseCam 2s infinite;
+  }
+  @keyframes pulseCam {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,229,200,0.3); }
+    50%      { box-shadow: 0 0 0 16px rgba(0,229,200,0); }
+  }
+  .perm-text  { color: var(--text); font-size: 14px; font-weight: 500; text-align: center; }
+  .perm-sub   { color: var(--muted); font-size: 12px; text-align: center; }
+  .perm-btn {
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    border: none; border-radius: 10px; padding: 10px 22px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: #000;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .perm-btn:hover { transform: scale(1.05); }
+
+  /* ── Doctor slot (RIGHT) — avatar ── */
+  .doctor-slot {
+    background: linear-gradient(135deg, #0d2040 0%, #0a1628 100%);
+  }
+  .cam-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px;
+  }
+  .doctor-avatar-wrap {
+    position: relative;
+  }
+  .doctor-avatar {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, #0070c0, var(--teal-dark));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 40px; font-weight: 800; color: #fff;
+    border: 3px solid var(--teal);
+    box-shadow: 0 0 40px rgba(0,229,200,0.25);
+  }
+  .online-ring {
+    position: absolute;
+    bottom: 6px; right: 6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--green);
+    border: 3px solid var(--card);
+    animation: ringPulse 2s infinite;
+  }
+  @keyframes ringPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(34,211,160,0.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(34,211,160,0); }
+  }
+  .doctor-name-tag {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .doctor-spec-tag {
+    font-size: 12px; color: var(--teal);
+    background: rgba(0,229,200,0.1); padding: 3px 12px; border-radius: 20px;
+    border: 1px solid rgba(0,229,200,0.25);
+  }
+
+  /* Cam label bottom */
+  .cam-label {
+    position: absolute; bottom: 14px; left: 16px;
+    background: rgba(0,0,0,0.62); padding: 4px 12px; border-radius: 8px;
+    font-size: 12px; color: var(--teal); font-weight: 600; letter-spacing: 0.4px;
+  }
+  .cam-status {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(0,0,0,0.62); padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; color: var(--green);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  .you-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: var(--teal); color: #000; font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;
+    z-index: 3;
+  }
+
+  /* Controls */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 18px;
+    background: rgba(17,24,39,0.95);
+    border-top: 1px solid var(--border);
+  }
+  .ctrl-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 24px;
+    cursor: pointer; transition: all 0.2s;
+    color: var(--text); font-size: 11px; font-weight: 500;
+    min-width: 90px; user-select: none;
+  }
+  .ctrl-btn svg { width: 22px; height: 22px; }
+  .ctrl-btn:hover { background: var(--card); border-color: var(--teal); color: var(--teal); transform: translateY(-2px); }
+  .ctrl-btn.active { background: rgba(0,229,200,0.1); border-color: var(--teal); color: var(--teal); }
+  .ctrl-btn.off    { background: rgba(255,77,109,0.12); border-color: rgba(255,77,109,0.35); color: var(--red); }
+  .end-btn {
+    background: var(--red) !important;
+    border-color: var(--red) !important;
+    color: #fff !important;
+    min-width: 130px;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+  }
+  .end-btn:hover { background: #e0003c !important; transform: translateY(-2px) scale(1.03) !important; }
+
+  /* ══════════════════════════
+     SUCCESS PAGE
+  ══════════════════════════ */
+  #successPage {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    background: radial-gradient(ellipse at 50% 30%, #0d2040 0%, var(--bg) 60%);
+  }
+  .success-circle {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 28px;
+    animation: popIn 0.5s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: 0 0 60px rgba(0,229,200,0.3);
+  }
+  @keyframes popIn {
+    from { opacity:0; transform:scale(0.4); }
+    to   { opacity:1; transform:scale(1); }
+  }
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 30px; font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .success-text {
+    color: var(--muted); font-size: 15px;
+    max-width: 380px; margin: 0 auto 32px; line-height: 1.6;
+  }
+  .redirect-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 32px;
+    display: inline-flex; align-items: center; gap: 14px;
+    font-size: 14px; color: var(--muted);
+  }
+  .count-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px; font-weight: 800; color: var(--teal);
+    min-width: 32px;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     PAGE 1 — PATIENT VIDEO CALL
+══════════════════════════════════ -->
+<div class="page active" id="zoomPage">
+
+  <div class="zoom-header">
+    <div class="logo">Doctor Consultation</div>
+    <div class="meeting-info">
+      <div class="rec-dot"></div>
+      <span class="meeting-id">Meeting: #MC-2026-0226</span>
+    </div>
+    <div class="call-timer" id="callTimer">00:00</div>
+  </div>
+
+  <div class="zoom-body">
+
+    <!-- LEFT — Patient (YOU) real webcam -->
+    <div class="video-slot patient-slot">
+      <video id="patientVideo" autoplay playsinline muted></video>
+
+      <!-- Permission overlay -->
+      <div id="camPermission">
+        <div class="perm-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2">
+            <path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+          </svg>
+        </div>
+        <div class="perm-text">Camera access required</div>
+        <div class="perm-sub">Allow camera permission to join the call</div>
+        <button class="perm-btn" onclick="startPatientCamera()">Allow Camera</button>
+      </div>
+
+      <div class="you-badge">YOU</div>
+      <div class="cam-label">👤 Patient &nbsp;·&nbsp; PID-10021</div>
+      <div class="cam-status" id="patientStatus" style="display:none;">
+        <span class="status-dot"></span> Live
+      </div>
+    </div>
+
+    <!-- RIGHT — Doctor avatar -->
+    <div class="video-slot doctor-slot">
+      <div class="cam-overlay">
+        <div class="doctor-avatar-wrap">
+          <div class="doctor-avatar">DR</div>
+          <div class="online-ring"></div>
+        </div>
+        <div class="doctor-name-tag">Doctor</div>
+        <div class="doctor-spec-tag">General Physician</div>
+      </div>
+      <div class="cam-label">🩺 Doctor</div>
+      <div class="cam-status"><span class="status-dot"></span> Connected</div>
+    </div>
+
+  </div>
+
+  <!-- Controls — only Mic, Video, End Call -->
+  <div class="controls-bar">
+
+    <button class="ctrl-btn active" id="micBtn" onclick="toggleMic()">
+      <svg id="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <span id="micLabel">Mic On</span>
+    </button>
+
+    <button class="ctrl-btn active" id="videoBtn" onclick="toggleVideo()">
+      <svg id="videoIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      <span id="videoLabel">Video On</span>
+    </button>
+
+    <button class="ctrl-btn end-btn" onclick="endCall()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M16.5 9.4l-9-5.19M21 16.42v-2.13a2 2 0 00-1.31-1.87l-3.69-1.23a2 2 0 00-2.28.79l-.86 1.29a14 14 0 01-4.73-4.73l1.29-.86a2 2 0 00.79-2.28L8.98 2.31A2 2 0 007.11 1H4.98A2 2 0 003 3.42C3.48 13.24 10.76 20.52 20.58 21a2 2 0 002.42-1.98v-2.13"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+      <span>End Call</span>
+    </button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PAGE 2 — CALL ENDED SUCCESS
+══════════════════════════════════ -->
+<div class="page" id="successPage">
+  <div class="success-circle">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.8">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <div class="success-title">Consultation Complete! ✓</div>
+  <div class="success-text">
+    Your video consultation with <strong style="color:var(--teal);">Doctor</strong> has ended.<br>
+    Your prescription will be shared by the doctor shortly.
+  </div>
+  <div class="redirect-box">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+    <span>Redirecting to Dashboard in</span>
+    <span class="count-num" id="countNum">5</span>
+    <span>sec...</span>
+  </div>
+</div>
+
+<script>
+  // ── Timer ──
+  let secs = 0;
+  let timerInt = setInterval(() => {
+    secs++;
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    document.getElementById('callTimer').textContent = m + ':' + s;
+  }, 1000);
+
+  // ── Real Camera ──
+  let localStream = null;
+
+  async function startPatientCamera() {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const video = document.getElementById('patientVideo');
+      video.srcObject = localStream;
+      video.style.display = 'block';
+      document.getElementById('camPermission').style.display = 'none';
+      document.getElementById('patientStatus').style.display = 'flex';
+    } catch (err) {
+      const perm = document.getElementById('camPermission');
+      perm.querySelector('.perm-text').textContent = 'Camera access denied';
+      perm.querySelector('.perm-sub').textContent = 'Please allow camera in browser settings and reload';
+      perm.querySelector('.perm-btn').textContent = 'Retry';
+    }
+  }
+
+  // Auto start camera on load
+  window.addEventListener('load', () => {
+    startPatientCamera();
+  });
+
+  // ── Mic Toggle ──
+  function toggleMic() {
+    const btn = document.getElementById('micBtn');
+    const label = document.getElementById('micLabel');
+    const icon = document.getElementById('micIcon');
+
+    if (!localStream) return;
+    const tracks = localStream.getAudioTracks();
+
+    if (btn.classList.contains('active')) {
+      tracks.forEach(t => t.enabled = false);
+      btn.classList.remove('active');
+      btn.classList.add('off');
+      label.textContent = 'Mic Off';
+      icon.innerHTML = `
+        <line x1="1" y1="1" x2="23" y2="23" stroke-width="2"/>
+        <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/>
+        <path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4M8 23h8"/>
+      `;
+    } else {
+      tracks.forEach(t => t.enabled = true);
+      btn.classList.add('active');
+      btn.classList.remove('off');
+      label.textContent = 'Mic On';
+      icon.innerHTML = `
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+      `;
+    }
+  }
+
+  // ── Video Toggle ──
+  function toggleVideo() {
+    const btn   = document.getElementById('videoBtn');
+    const label = document.getElementById('videoLabel');
+    const video = document.getElementById('patientVideo');
+
+    if (!localStream) return;
+    const tracks = localStream.getVideoTracks();
+
+    if (btn.classList.contains('active')) {
+      tracks.forEach(t => t.enabled = false);
+      video.style.opacity = '0.12';
+      btn.classList.remove('active');
+      btn.classList.add('off');
+      label.textContent = 'Video Off';
+    } else {
+      tracks.forEach(t => t.enabled = true);
+      video.style.opacity = '1';
+      btn.classList.add('active');
+      btn.classList.remove('off');
+      label.textContent = 'Video On';
+    }
+  }
+
+  // ── End Call ──
+  function endCall() {
+    clearInterval(timerInt);
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    showPage('successPage');
+
+    // Countdown redirect
+    let n = 5;
+    const counter = document.getElementById('countNum');
+    const cd = setInterval(() => {
+      n--;
+      counter.textContent = n;
+      if (n <= 0) {
+        clearInterval(cd);
+        window.location.href = 'p-dashboard.jsp';
+        /* alert('✅ Redirecting to Patient Dashboard!'); */
+        showPage('zoomPage');
+        secs = 0;
+        timerInt = setInterval(() => {
+          secs++;
+          const m = String(Math.floor(secs / 60)).padStart(2, '0');
+          const s = String(secs % 60).padStart(2, '0');
+          document.getElementById('callTimer').textContent = m + ':' + s;
+        }, 1000);
+        startPatientCamera();
+      }
+    }, 1000);
+  }
+
+  // ── Page switch ──
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
