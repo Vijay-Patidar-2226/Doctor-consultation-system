@@ -534,18 +534,6 @@
         <a href="d_update_profile.html" class="nav-item">
             <span class="nav-icon">⚙️</span><span>Update Profile</span>
         </a>
-        <a href="d-previous-consultations.jsp" class="nav-item">
-            <span class="nav-icon">⚙️</span><span>Previous Consultation</span>
-        </a>
-        <a href="d-followup.jsp" class="nav-item">
-            <span class="nav-icon">⚙️</span><span>Follow-Up Requests</span>
-        </a>
-        <a href="addPrescription.jsp" class="nav-item">
-            <span class="nav-icon">⚙️</span><span>Add Prescription</span>
-        </a>
-        <a href="prescriptionHistory.jsp" class="nav-item">
-            <span class="nav-icon">⚙️</span><span>Prescription History</span>
-        </a>
     </nav>
 
     <div class="logout-section">
@@ -676,15 +664,11 @@
                     <div class="qa-label">My Patients</div>
                 </a>
                 
-                <a href="d-previous-consultations.jsp" class="qa-btn">
+                <a href="d-previous-consultations.jsp" class="qa-btn" style="grid-column: span 2;">
         			<div class="qa-icon">📋</div>
         			<div class="qa-label">Previous Consultations</div>
     			</a>
-    			<a href="d-followup.jsp" class="qa-btn">
-        			<div class="qa-icon">📋</div>
-        			<div class="qa-label">Follow-Up Requests</div>
-    			</a>
-    			
+                
             </div>
 
             <!-- Today's Schedule mini-view -->

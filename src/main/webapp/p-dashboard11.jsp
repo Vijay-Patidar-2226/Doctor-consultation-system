@@ -620,12 +620,6 @@ body {
             <p>Schedule appointments with your preferred doctors at your convenience</p>
             <span class="service-arrow">→</span>
         </a>
-        <a href="p-followup.jsp" class="service-card">
-            <span class="service-icon">📅</span>
-            <h3>Request Follow-Up</h3>
-            <p>Apply for a follow-up with your doctor</p>
-            <span class="service-arrow">→</span>
-        </a>
         <a href="Patient_online_consultation.html" class="service-card">
             <span class="service-icon">💻</span>
             <h3>Video Consultation</h3>

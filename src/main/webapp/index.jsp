@@ -161,5 +161,11 @@
             <p>&copy; 2024 MediConnect. All rights reserved. | Privacy Policy | Terms of Service</p>
         </div>
     </footer> -->
+    
+     <h1 class="bot"> <p>Health Bot</p>
+         </h1>
+<div class="bot-frt">
+    <iframe src='https://webchat.botframework.com/embed/healthbot-vlulkbo?s=RSeTzaiOQ5o.z69KMvVqXvMgk_gUvLny3w66Igtjrg3KpHg3WmPCge4'  style='min-width: 400px; width: 100%; min-height: 500px;'></iframe>
+</div>
 </body>
 </html>
